@@ -1,50 +1,63 @@
 ---
-- name: Modify variables in init file
-  lineinfile:
-    dest: "{{ jenkins_init_file }}"
-    insertafter: '^{{ item.option }}='
-    regexp: '^{{ item.option}}=\"\${{ item.option }} '
-    line: '{{ item.option }}="${{ item.option }} {{ item.value }}"'
-    state: present
-  with_items:
-      "{{ jenkins_init_changes }}"
-  register: jenkins_init_prefix
+# - name: Modify variables in init file
+#   win_lineinfile:
+#     dest: "{{ jenkins_init_file }}"
+#     insertafter: '^{{ item.option }}='
+#     regexp: '^{{ item.option}}=\"\${{ item.option }} '
+#     line: '{{ item.option }}="${{ item.option }} {{ item.value }}"'
+#     state: present
+#   with_items:
+#       "{{ jenkins_init_changes }}"
+#   register: jenkins_init_prefix
 
-- name: Set the Jenkins home directory
-  lineinfile:
-    dest: "{{ jenkins_init_file }}"
-    regexp: '^JENKINS_HOME=.*'
-    line: 'JENKINS_HOME={{ jenkins_home }}'
-  register: jenkins_home_config
+# - name: Set the Jenkins home directory
+#   win_lineinfile:
+#     dest: "{{ jenkins_init_file }}"
+#     regexp: '^JENKINS_HOME=.*'
+#     line: 'JENKINS_HOME={{ jenkins_home }}'
+#   register: jenkins_home_config
 
-- name: Immediately restart Jenkins on init config changes.
-  service: name=jenkins state=restarted
-  when: jenkins_init_prefix.changed
+# Here we hardcode the version in the template... Not good. Need to use a variable, or even better, use the 
+# java args to bypass the security wizard ( need to tune regexp)
+- name: bypass the security wizard
+  template:
+    src: jenkins.lastExecVersion
+    dest: "{{ jenkins_home }}/jenkins.install.InstallUtil.lastExecVersion"
+  register: jenkins_init
 
-- name: Set HTTP port in Jenkins config.
-  lineinfile:
-    backrefs: yes
-    dest: "{{ jenkins_init_file }}"
-    regexp: '^{{ jenkins_http_port_param }}='
-    line: '{{ jenkins_http_port_param }}={{ jenkins_http_port }}'
-  register: jenkins_http_config
+# - name: Set HTTP port in Jenkins config.
+#   win_lineinfile:
+#     backrefs: yes
+#     dest: "{{ jenkins_init_file }}"
+#     regexp: '^{{ jenkins_http_port_param }}='
+#     line: '{{ jenkins_http_port_param }}={{ jenkins_http_port }}'
+#   register: jenkins_http_config
 
 - name: Create custom init scripts directory.
-  file:
+  win_file:
     path: "{{ jenkins_home }}/init.groovy.d"
     state: directory
-    owner: jenkins
-    group: jenkins
-    mode: 0775
 
 - name: Configure Jenkins default users.
   template:
     src: basic-security.groovy
     dest: "{{ jenkins_home }}/init.groovy.d/basic-security.groovy"
   register: jenkins_users_config
-  when: (jenkins_install_package_deb is defined and jenkins_install_package_deb.changed) or
-        (jenkins_install_package_rh is defined and jenkins_install_package_rh.changed)
+  when: (jenkins_install_package_win is defined and jenkins_install_package_win.changed)
 
-- name: Immediately restart Jenkins on http or user changes.
-  service: name=jenkins state=restarted
-  when: jenkins_users_config.changed or jenkins_http_config.changed or jenkins_home_config.changed
+- name: Set web proxy for downloading plugins
+  template:
+    src: proxy.groovy
+    dest: "{{ jenkins_home }}/init.groovy.d/proxy.groovy"
+  register: jenkins_proxy_config
+  when: (jenkins_install_package_win is defined and jenkins_install_package_win.changed)
+
+- name: Set JNLP port for CLI access
+  template:
+    src: set_jnlp_port.groovy
+    dest: "{{ jenkins_home }}/init.groovy.d/set_jnlp_port.groovy"
+  register: jenkins_jnlp_port_config
+  when: (jenkins_install_package_win is defined and jenkins_install_package_win.changed)
+
+- name: Immediately restart Jenkins after all changes.
+  win_service: name=jenkins state=restarted
