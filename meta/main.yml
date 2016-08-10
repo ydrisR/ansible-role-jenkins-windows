@@ -1,21 +1,18 @@
 ---
 galaxy_info:
-  author: geerlingguy
-  description: Jenkins CI
-  company: "Midwestern Mac, LLC"
-  license: "license (BSD, MIT)"
+  author: Sirdy
+  description: Jenkins CI for Windows
+  license: "GNU GENERAL PUBLIC LICENSE"
   min_ansible_version: 1.9
   platforms:
-  - name: EL
+  - name: Windows
     versions:
-    - 6
     - 7
-  - name: Debian
-    versions:
-    - all
-  - name: Ubuntu
-    versions:
-    - all
+    - 10
+    - 2012
+    - 2016
   galaxy_tags:
     - development
     - packaging
+    - CI
+    - devops

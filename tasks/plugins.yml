@@ -7,22 +7,8 @@
     state: directory
   register: jenkins_plugins_folder_create
 
-# - name: Update Jenkins plugin data.
-#   raw: >
-#     curl -L https://updates.jenkins-ci.org/update-center.json | Select -Skip 1 | Select -SkipLast 1 > "{{ jenkins_home }}/updates/default.json"
-#     creates="{{ jenkins_home }}/updates/default.json"
-# 
-# - name: Permissions for default.json updates info.
-#   file:
-#     path: "{{ jenkins_home }}/updates/default.json"
-#     owner: jenkins
-#     group: jenkins
-#     mode: 0755
-#   when: jenkins_plugins_folder_create.changed
-# 
-# - stat: path={{ jenkins_admin_password_file }}
-#   register: adminpasswordfile
-
+# Install plugins using the CLI. Should write a ps script to make things a bit cleaner...
+# TODO: Need to investigate how to use ssh keys instead of user/password
 - name: Install Jenkins plugins using password.
   raw: >
     java -jar {{ jenkins_jar_location }} -s http://{{ jenkins_hostname }}:{{ jenkins_http_port }}{{ jenkins_url_prefix | default('') }}/
@@ -30,5 +16,4 @@
     --username {{ jenkins_admin_username }}
     --password {{ jenkins_admin_password }}
   with_items: "{{ jenkins_plugins }}"
-  when: jenkins_admin_password != ""
   notify: restart jenkins

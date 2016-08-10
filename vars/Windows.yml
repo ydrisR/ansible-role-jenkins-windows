@@ -1,5 +1,3 @@
 ---
-__jenkins_repo_url: deb http://pkg.jenkins-ci.org/debian binary/
-__jenkins_repo_key_url: http://pkg.jenkins-ci.org/debian/jenkins-ci.org.key
-jenkins_init_file: C:\Program Files (x86)\Jenkins\jenkins.xml
+jenkins_init_file: {{ jenkins_home }}\Jenkins\jenkins.xml
 jenkins_http_port_param: --httpPort

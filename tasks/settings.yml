@@ -61,3 +61,10 @@
 
 - name: Immediately restart Jenkins after all changes.
   win_service: name=jenkins state=restarted
+  regiser: jenkins_started
+
+- name: Remove Jenkins security init scripts after first startup.
+  win_file:
+    path: "{{ jenkins_home }}/init.groovy.d/basic-security.groovy"
+  when: jenkins_started is defined
+    state: absent
